@@ -86,3 +86,40 @@ We achieved peak out-of-sample predictive power by combining a specific mathemat
 **A:** The yield curve is hyper-sensitive to the methodology. Unconstrained MLE violently overfitted daily variance, resulting in extreme mean-reversion speeds (kappa > 2.0) that completely failed to predict long-term maturities. Ordinary Least Squares (OLS) and Generalised Method of Moments (GMM) proved vastly superior by prioritizing macro-level drift and variance moments over micro-daily noise.
 
 **Q: Under what market conditions does the Feller condition break down in practice, and how do you handle it?**
+**A:** The Feller condition breaks down during prolonged, multi-year downward-trending markets. An unconstrained algorithm will extrapolate this trend into negative territory, yielding kappa < 0 and theta < 0. We handled this programmatically by applying Constrained Optimization boundaries (via scipy.optimize), forcing the algorithm to preserve the strictly positive square-root diffusion process.
+
+**Q: What does the mean-reversion speed (kappa) imply about the persistence of interest rate shocks in your data?**
+**A:** Our optimal calibration yielded a relatively slow speed of mean reversion (kappa approx 0.10 to 0.12). This implies that interest rate shocks are highly persistent. When central banks alter policy rates, the effects do not snap back immediately; they reverberate through the yield curve for roughly 8 to 10 years before fully reverting to the long-term mean.
+
+### Part 2: Prediction and Out-of-Sample Performance
+**Q: How accurately can the 3M rate alone reconstruct the full yield curve, and which maturities are hardest to fit?**
+**A:** The 3M rate acts as a strong anchor for the "level" of the short end of the curve, but accuracy decays as maturity increases. The hardest maturities to fit are the ultra-long ends (20Y and 30Y). These tenors contain massive term premiums driven by long-term macroeconomic inflation expectations that a single instantaneous short-rate proxy simply cannot encapsulate.
+
+**Q: Where does the base CIR model systematically over- or underestimate yields, and why?**
+**A:** The base CIR model systematically overestimates long-term yields. Because it is strictly mean-reverting, calibrating it on a downward trend forced the optimizer to set an artificially massive theta target (343%) to avoid breaking constraints. This absurd target acted as a mathematical magnet, violently pulling all long-term yield predictions upward.
+
+**Q: Does your extension meaningfully improve out-of-sample performance, or does it overfit the training period?**
+**A:** The CIR++ extension, when paired with Bayesian MCMC and Regime Isolation, meaningfully improved out-of-sample performance (boosting R-squared from 0.69 to 0.9285). However, we empirically proved that adding unnecessary mathematical complexity leads directly to overfitting. Highly complex models (Two-Factor Kalman Filters, Jump-Diffusion) overfit to 50-day and 70-day micro-regimes, failing to generalize out-of-sample.
+
+### Part 3: Extensions and Modelling Choices
+**Q: What mathematical structure justifies your chosen extension over the alternatives?**
+**A:** We chose the Time-Dependent Brigo-Mercurio (CIR++) extension because it acts directly as an error-correction layer. By calculating an Empirical Deterministic Shift exactly on t=0, the structure mathematically forces the model to fit the initial yield curve exactly. This directly counteracted the base model's systematic long-term overestimation without requiring the estimation of unobservable variables.
+
+**Q: How do jump processes change the qualitative shape of predicted yield curves during stress periods?**
+**A:** Poisson jump processes (CIR-J) change the qualitative shape by introducing "fat tails" to the probability distribution, accommodating sudden, discontinuous stress events. However, our empirical testing discarded this model, as our dataset's primary challenge was a slow-moving macro-trend, not sudden shocks, causing the model to overfit to micro-shocks.
+
+**Q: What are the additional estimation challenges introduced by a two-factor or time-dependent model?**
+**A:** * **Two-Factor Models:** Because we are constrained to only observing the 3M rate, the two underlying drivers (x_t and y_t) are unobservable. Estimating them requires complex Dynamic State-Space modeling (Kalman Filtering), which is highly prone to over-parameterization and overfitting micro-regimes (as seen with the 50-day overfit).
+* **Time-Dependent Models (CIR++):** The primary challenge is Microstructural Noise Sensitivity. Because the framework relies on fitting the initial term structure (t=0) with zero error, the entire predictive shift is entirely dependent on the market conditions of that single calibration day. Temporary liquidity shocks on Day 0 become permanently baked into the model's forward pricing.
+
+---
+
+## 7. Personal Learnings & Conclusion
+
+This project evolved from a standard coding assignment into an extensive masterclass in quantitative finance research. My core takeaways include:
+
+1. **The Overfitting Trap:** I learned firsthand that more complex math does not equal better predictions. Jump-Diffusion and 7-parameter Kalman Filters act like contortionists; they perfectly memorize local noise but violently misprice global out-of-sample reality. 
+2. **Regime Shifts are Everything:** Financial data is not stationary. Attempting to calibrate a model over 8 years of chaotic data forces the model to average out a world that has fundamentally changed. I learned the critical importance of dynamically isolating the "Lookback Window" to capture the current macroeconomic regime.
+3. **Local Fit vs. Global Fit (The Single-Day Illusion):** I experienced how an overfitted model (like the Kalman Filter) looks visually perfect on one specific day's graph but fails the aggregate R-squared score across the entire timeline. I learned to trust Bayesian probability distributions and structural rigidity over single-point estimates for true global stability.
+
+By rigorously testing parameters, refusing to accept theoretical ceilings, and engineering data-driven solutions to deep mathematical failures, I successfully reconstructed the yield curve and significantly exceeded the project's predictive constraints.
