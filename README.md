@@ -1,4 +1,4 @@
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/KumarEklavya1/Finance-Club-Yield-Curve-Prediction-Project/blob/main/Finance_Project_Yield_Curve_Prediction_(by_Kumar_Eklavya)(2).ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/KumarEklavya1/Finance-Club-Yield-Curve-Prediction-Project/blob/main/Finance_Project_Yield_Curve_Prediction_(by_Kumar_Eklavya_24323019).ipynb)
 # Stochastic Interest Rate Modelling: CIR and CIR++ Implementation
 
 **Objective:** To implement, calibrate, and extend the Cox-Ingersoll-Ross (CIR) short-rate model, and evaluate its predictive power in reconstructing the yield curve from a single observable 3-Month rate.
